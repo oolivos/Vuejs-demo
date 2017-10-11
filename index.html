@@ -11,7 +11,7 @@
 
   </head>
   <body class="container">
-    <h1>Que es Vuejs</h1>
+    <h1>Lista de Tareas</h1>
     <section id="app">
       <form class="form col-lg-12" v-on:submit.prevent="agregar()" style="margin-bottom:  20px">
         <div class="form-group col-lg-12">
@@ -28,9 +28,8 @@
       </form>
       <table class="table" v-if="tareas != ''">
         <tr>
-          <th>Nombre</th>
-          <th>Edad</th>
-          <th>correo</th>
+          <th>Titulo</th>
+          <th>Descripcion</th>
           <th>Opciones</th>
         </tr>
         <tr v-for="tarea in tareas">
@@ -78,10 +77,11 @@
           agregar : function(){
             //alert('todo ok');
             var key = firebase.database().ref().child('tareas').push().key;
-            firebase.database().ref('tareas/'+key).update({
-              titulo : 'Taller Casa',
-              descripcion : 'Realizar el taller de los 1000 puntos'
-            });
+            firebase.database().ref('tareas/'+key).update(this.nuevaTarea);
+            this.nuevaTarea = {
+              titulo : '',
+              descripcion : ''
+            }
 
             
           },
@@ -89,9 +89,26 @@
             var index = this.datos.indexOf(dato);
             this.datos.splice(index,1)
 
+          },
+          traerData: function(){
+
+            
+              firebase.database().ref("tareas").on("child_added", function(data){
+                nuevaTarea = data.val();
+                nuevaTarea.key = data.key;
+                app.tareas.push(nuevaTarea);
+                console.log(nuevaTarea);
+
+              })
+            
+            
           }
 
+        },
+        mounted(){
+          this.traerData();
         }
+
 
 
       });
