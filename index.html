@@ -37,6 +37,7 @@
           <td>{{ tarea.descripcion}}</td>
           <td>
             <button type="button" class="btn btn-danger btn-sm" v-on:click="eliminar(tarea)" >Eliminar</button>
+            <button type="button" class="btn btn-warning btn-sm" v-on:click="editar(tarea)">Editar</button>
           </td>
         </tr>
       </table>
@@ -52,6 +53,7 @@
     <script src="https://www.gstatic.com/firebasejs/4.3.1/firebase.js"></script>
 
     <script>
+      
       var config = {
         apiKey: "AIzaSyBhNp0ZQN6Dv0sDFO6BOdu4xnK1dW9pfKw",
         authDomain: "listatareas-6646c.firebaseapp.com",
@@ -60,6 +62,7 @@
         storageBucket: "listatareas-6646c.appspot.com",
         messagingSenderId: "581580670299"
       };
+      
 
       firebase.initializeApp(config);
       
@@ -71,13 +74,25 @@
             descripcion : ''
           },
           tareas : [],
+          editando: false,
           
         },
         methods:{
           agregar : function(){
             //alert('todo ok');
-            var key = firebase.database().ref().child('tareas').push().key;
-            firebase.database().ref('tareas/'+key).update(this.nuevaTarea);
+            if(this.editando){
+              //actualizar
+              firebase.database().ref('tareas/'+this.nuevaTarea.key).update({
+                titulo : this.nuevaTarea.titulo,
+                descripcion : this.nuevaTarea.descripcion
+              });
+            }else{
+              //Crear
+               var key = firebase.database().ref().child('tareas').push().key;
+              firebase.database().ref('tareas/'+key).update(this.nuevaTarea);
+            }
+
+            this.editando = false;
             this.nuevaTarea = {
               titulo : '',
               descripcion : ''
@@ -85,9 +100,15 @@
 
             
           },
-          eliminar: function(dato){
-            var index = this.datos.indexOf(dato);
-            this.datos.splice(index,1)
+          editar : function(tarea){
+            this.nuevaTarea = tarea;
+            this.editando = true;
+            console.log(tarea)
+
+          },
+          eliminar: function(tarea){
+            //console.log(tarea);
+            firebase.database().ref('tareas/'+tarea.key).remove();
 
           },
           traerData: function(){
@@ -97,9 +118,27 @@
                 nuevaTarea = data.val();
                 nuevaTarea.key = data.key;
                 app.tareas.push(nuevaTarea);
-                console.log(nuevaTarea);
+                //console.log(nuevaTarea);
 
-              })
+              });
+              firebase.database().ref('tareas').on('child_removed',function(data){
+                nodoBorrado = data.val();
+                nodoBorrado.key = data.key;
+                index = app.tareas.indexOf(nodoBorrado);
+                app.tareas.splice(index, 1); 
+              });
+
+              firebase.database().ref('tareas').on('child_changed',function(data){
+                nodoActualizado = data.val();
+                nodoActualizado.key = data.key;
+                console.log(nodoActualizado);
+                index = app.tareas.indexOf(nodoActualizado);
+                app.tareas[index] = nodoActualizado;
+                //alert('actualizado')
+
+              });
+
+
             
             
           }
